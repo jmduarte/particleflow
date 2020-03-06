@@ -57,9 +57,9 @@ def main(args):
     min_eta = -1.5
     max_eta = 1.5
     extra = 1.0
-    for plot_type in [['input', 'truth'], 
-                      ['input', 'output'], 
-                      ['truth', 'output'],
+    for plot_type in [#['input', 'truth'], 
+                      #['input', 'output'], 
+                      #['truth', 'output'],
                       ['input'],
                       ['output'],
                       ['truth']]:
@@ -93,12 +93,13 @@ def main(args):
         track_mask = cut_mask & df['isTrack']
         plt.scatter(df[x][cluster_mask], df[y][cluster_mask],c='g',marker='o',s=50,zorder=4,alpha=1)
         plt.scatter(df[x][track_mask], df[y][track_mask],c='b',marker='p',s=50,zorder=5,alpha=1)
-        plt.xlabel("%s"%x)
-        plt.ylabel("%s"%y)
+        plt.xlabel("Track or Cluster $\eta$",fontsize=14)
+        plt.ylabel("Track or Cluster $\phi$",fontsize=14)
         plt.xlim(min_eta, max_eta)
         plt.ylim(min_phi, max_phi)
-        plt.figtext(0.25, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
-        plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+        plt.figtext(0.12, 0.90,'CMS',fontweight='bold', wrap=True, horizontalalignment='left', fontsize=16)
+        plt.figtext(0.22, 0.90,'Simulation Preliminary', style='italic', wrap=True, horizontalalignment='left', fontsize=14) 
+        plt.figtext(0.67, 0.90,'Run 3 (14 TeV)',  wrap=True, horizontalalignment='left', fontsize=14) 
         plt.savefig('graph_%s_%s_%s.pdf'%(x,y,'_'.join(plot_type)))
 
 if __name__ == "__main__":
