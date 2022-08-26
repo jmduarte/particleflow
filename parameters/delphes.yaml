@@ -91,7 +91,7 @@ parameters:
   do_node_encoding: no
   node_encoding_hidden_dim: 128
   combined_graph_layer:
-    bin_size: 640
+    bin_size: 64
     max_num_bins: 100
     distance_dim: 128
     layernorm: no
@@ -161,7 +161,7 @@ callbacks:
     save_weights_only: yes
     monitor: "val_loss"
     save_best_only: no
-  plot_freq: 10
+  plot_freq: 1000
   tensorboard:
     dump_history: yes
     hist_freq: 1
@@ -217,7 +217,7 @@ raytune:
 
 train_test_datasets:
   delphes: 
-    batch_per_gpu: 5
+    batch_per_gpu: 16
     datasets:
       - delphes_pf
 
@@ -225,6 +225,6 @@ validation_dataset: delphes_pf
 
 datasets:
   delphes_pf:
-    version: 1.0.0
-    data_dir:
+    version: 1.0.1
+    data_dir: /voyager/ceph/users/ewulff/tensorflow_datasets
     manual_dir:

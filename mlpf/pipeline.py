@@ -189,79 +189,79 @@ def train(config, weights, ntrain, ntest, nepochs, recreate, prefix, plot_freq, 
 
     shutil.copy(config_file_path, outdir + "/config.yaml")  # Copy the config file to the train dir for later reference
 
-    # with strategy.scope():
-    lr_schedule, optim_callbacks = get_lr_schedule(config, steps=total_steps)
-    opt = get_optimizer(config, lr_schedule)
+    with strategy.scope():
+        lr_schedule, optim_callbacks = get_lr_schedule(config, steps=total_steps)
+        opt = get_optimizer(config, lr_schedule)
 
-    if config["setup"]["dtype"] == "float16":
-        model_dtype = tf.dtypes.float16
-        policy = mixed_precision.Policy("mixed_float16")
-        mixed_precision.set_global_policy(policy)
-        opt = mixed_precision.LossScaleOptimizer(opt)
-    else:
-        model_dtype = tf.dtypes.float32
+        if config["setup"]["dtype"] == "float16":
+            model_dtype = tf.dtypes.float16
+            policy = mixed_precision.Policy("mixed_float16")
+            mixed_precision.set_global_policy(policy)
+            opt = mixed_precision.LossScaleOptimizer(opt)
+        else:
+            model_dtype = tf.dtypes.float32
 
-    model = make_model(config, model_dtype)
+        model = make_model(config, model_dtype)
 
-    # Build the layers after the element and feature dimensions are specified
-    model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
+        # Build the layers after the element and feature dimensions are specified
+        model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
 
-    initial_epoch = 0
-    if weights:
-        # We need to load the weights in the same trainable configuration as the model was set up
-        configure_model_weights(model, config["setup"].get("weights_config", "all"))
-        model.load_weights(weights, by_name=True)
-        initial_epoch = int(weights.split("/")[-1].split("-")[1])
-    model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
+        initial_epoch = 0
+        if weights:
+            # We need to load the weights in the same trainable configuration as the model was set up
+            configure_model_weights(model, config["setup"].get("weights_config", "all"))
+            model.load_weights(weights, by_name=True)
+            initial_epoch = int(weights.split("/")[-1].split("-")[1])
+        model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
 
-    config = set_config_loss(config, config["setup"]["trainable"])
-    configure_model_weights(model, config["setup"]["trainable"])
-    model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
+        config = set_config_loss(config, config["setup"]["trainable"])
+        configure_model_weights(model, config["setup"]["trainable"])
+        model.build((1, config["dataset"]["padded_num_elem_size"], config["dataset"]["num_input_features"]))
 
-    print("model weights")
-    tw_names = [m.name for m in model.trainable_weights]
-    for w in model.weights:
-        print("layer={} trainable={} shape={} num_weights={}".format(w.name, w.name in tw_names, w.shape, np.prod(w.shape)))
+        print("model weights")
+        tw_names = [m.name for m in model.trainable_weights]
+        for w in model.weights:
+            print("layer={} trainable={} shape={} num_weights={}".format(w.name, w.name in tw_names, w.shape, np.prod(w.shape)))
 
-    loss_dict, loss_weights = get_loss_dict(config)
-    model.compile(
-        loss=loss_dict,
-        optimizer=opt,
-        sample_weight_mode="temporal",
-        loss_weights=loss_weights,
-        metrics={
-            "cls": [
-                FlattenedCategoricalAccuracy(name="acc_unweighted", dtype=tf.float64),
-                FlattenedCategoricalAccuracy(use_weights=True, name="acc_weighted", dtype=tf.float64),
-            ] + [
-                SingleClassRecall(
-                    icls,
-                    name="rec_cls{}".format(icls),
-                    dtype=tf.float64) for icls in range(config["dataset"]["num_output_classes"])
-            ]
-        },
-    )
-    model.summary()
-    # strategy scope end
+        loss_dict, loss_weights = get_loss_dict(config)
+        model.compile(
+            loss=loss_dict,
+            optimizer=opt,
+            sample_weight_mode="temporal",
+            loss_weights=loss_weights,
+            metrics={
+                "cls": [
+                    FlattenedCategoricalAccuracy(name="acc_unweighted", dtype=tf.float64),
+                    FlattenedCategoricalAccuracy(use_weights=True, name="acc_weighted", dtype=tf.float64),
+                ] + [
+                    SingleClassRecall(
+                        icls,
+                        name="rec_cls{}".format(icls),
+                        dtype=tf.float64) for icls in range(config["dataset"]["num_output_classes"])
+                ]
+            },
+        )
+        model.summary()
+        # strategy scope end
 
-    callbacks = prepare_callbacks(
-        config["callbacks"],
-        outdir,
-        ds_val,
-        ds_info,
-        comet_experiment=experiment
-    )
-    callbacks.append(optim_callbacks)
+        callbacks = prepare_callbacks(
+            config["callbacks"],
+            outdir,
+            ds_val,
+            ds_info,
+            comet_experiment=experiment
+        )
+        callbacks.append(optim_callbacks)
 
-    fit_result = model.fit(
-        ds_train.repeat(),
-        validation_data=ds_test.repeat(),
-        epochs=initial_epoch + config["setup"]["num_epochs"],
-        callbacks=callbacks,
-        steps_per_epoch=num_train_steps,
-        validation_steps=num_test_steps,
-        initial_epoch=initial_epoch,
-    )
+        fit_result = model.fit(
+            ds_train.repeat(),
+            validation_data=ds_test.repeat(),
+            epochs=initial_epoch + config["setup"]["num_epochs"],
+            callbacks=callbacks,
+            steps_per_epoch=num_train_steps,
+            validation_steps=num_test_steps,
+            initial_epoch=initial_epoch,
+        )
 
 
     history_path = Path(outdir) / "history"

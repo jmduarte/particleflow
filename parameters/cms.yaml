@@ -199,12 +199,12 @@ raytune:
 
 train_test_datasets:
   physical: 
-    batch_per_gpu: 24
+    batch_per_gpu: 15
     datasets:
       - cms_pf_ttbar
       # - cms_pf_ztt
   gun: 
-    batch_per_gpu: 800
+    batch_per_gpu: 400
     datasets:
       # - cms_pf_single_pi
       # - cms_pf_single_pi0

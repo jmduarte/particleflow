@@ -4,7 +4,7 @@ from tqdm import tqdm
 from pathlib import Path
 import seaborn as sns
 
-from ray.tune import Analysis, ExperimentAnalysis
+from ray.tune import analysis, ExperimentAnalysis
 
 
 def get_hp_str(result):
